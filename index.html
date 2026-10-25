@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Gridwork Spreadsheet</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&display=swap">
+    <style>
+        :root {
+            --bg: #f4f6f3;
+            --panel: #fff;
+            --line: #d8ddd5;
+            --head: #e9ede6;
+            --ink: #1c2420;
+            --mute: #667068;
+            --acc: #1f7a4d;
+            --sel: rgba(31, 122, 77, .14);
+            --cellink: #1c2420;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
+        }
+
+        @media (prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) {
+                color-scheme: dark;
+                --bg: #151a17;
+                --panel: #1d2420;
+                --line: #323b35;
+                --head: #262e29;
+                --ink: #e6ebe7;
+                --mute: #92a097;
+                --acc: #4cc38a;
+                --sel: rgba(76, 195, 138, .2)
+            }
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #151a17;
+            --panel: #1d2420;
+            --line: #323b35;
+            --head: #262e29;
+            --ink: #e6ebe7;
+            --mute: #92a097;
+            --acc: #4cc38a;
+            --sel: rgba(76, 195, 138, .2)
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font: 14px/1.3 Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            padding: 8px 10px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line)
+        }
+
+        .bar button,
+        .bar label {
+            height: 30px;
+            min-width: 30px;
+            padding: 0 9px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            color: var(--ink);
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .bar button:hover,
+        .bar label:hover {
+            background: var(--head)
+        }
+
+        .bar button:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--acc);
+            outline-offset: 1px
+        }
+
+        .bar input[type=color] {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: 0;
+            background: none;
+            cursor: pointer
+        }
+
+        .sw {
+            width: 22px;
+            height: 22px;
+            min-width: 22px !important;
+            padding: 0 !important;
+            border-radius: 50% !important
+        }
+
+        .sep {
+            width: 1px;
+            height: 22px;
+            background: var(--line);
+            margin: 0 4px
+        }
+
+        .fx {
+            display: flex;
+            gap: 0;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line)
+        }
+
+        #nb {
+            width: 70px;
+            border: 0;
+            border-right: 1px solid var(--line);
+            text-align: center;
+            font-weight: 700;
+            background: var(--head);
+            color: var(--ink);
+            padding: 7px 0;
+            font: inherit;
+            font-weight: 700
+        }
+
+        #fb {
+            flex: 1;
+            border: 0;
+            padding: 7px 10px;
+            background: var(--panel);
+            color: var(--ink);
+            font: inherit;
+            min-width: 0
+        }
+
+        .wrap {
+            flex: 1;
+            overflow: auto;
+            background: var(--panel)
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+            font-variant-numeric: tabular-nums
+        }
+
+        th,
+        td {
+            border-right: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            height: 26px;
+            padding: 0 6px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: clip;
+            color: var(--cellink)
+        }
+
+        th {
+            background: var(--head);
+            color: var(--mute);
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            user-select: none;
+            cursor: pointer
+        }
+
+        th.r {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            width: 46px;
+            min-width: 46px
+        }
+
+        th.corner {
+            left: 0;
+            z-index: 3
+        }
+
+        td {
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            cursor: cell;
+            user-select: none
+        }
+
+        td.in {
+            background-image: linear-gradient(var(--sel), var(--sel))
+        }
+
+        td.cur {
+            outline: 2px solid var(--acc);
+            outline-offset: -2px
+        }
+
+        th.hl {
+            background: var(--sel);
+            color: var(--ink)
+        }
+
+        td input {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            outline: 0;
+            background: var(--panel);
+            color: #1c2420;
+            font: inherit;
+            padding: 0;
+            margin: 0;
+            user-select: text
+        }
+
+        .stat {
+            padding: 5px 12px;
+            background: var(--panel);
+            border-top: 1px solid var(--line);
+            color: var(--mute);
+            font-size: 12.5px;
+            min-height: 28px
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 16px
+        }
+
+        .modal.on {
+            display: flex
+        }
+
+        .box {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 14px;
+            width: min(760px, 100%);
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .box h2 {
+            margin: 0;
+            font-size: 16px
+        }
+
+        .box textarea {
+            width: 100%;
+            height: 50vh;
+            font: 13px/1.35 ui-monospace, Menlo, Consolas, monospace;
+            white-space: pre;
+            overflow: auto;
+            background: var(--bg);
+            color: var(--ink);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 8px;
+            resize: none
+        }
+
+        .box .row {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            align-items: center
+        }
+
+        .box .tabs {
+            display: flex;
+            gap: 6px
+        }
+
+        .box .tabs button.on {
+            background: var(--acc);
+            border-color: var(--acc);
+            color: #fff
+        }
+
+        .box ol {
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+            min-height: 50vh
+        }
+
+        .box ol li {
+            margin-bottom: 8px
+        }
+
+        #dm {
+            color: var(--mute);
+            font-size: 12.5px;
+            margin-right: auto
+        }
+
+        [hidden] {
+            display: none !important
+        }
+
+        .box button {
+            height: 30px;
+            padding: 0 12px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            color: var(--ink);
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer
+        }
+
+        .box button.pri {
+            background: var(--acc);
+            border-color: var(--acc);
+            color: #fff
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bar" role="toolbar" aria-label="Formatting">
+        <button id="b" title="Bold (Ctrl+B)"><b>B</b></button>
+        <button id="i" title="Italic (Ctrl+I)"><i>I</i></button>
+        <span class="sep"></span>
+        <button data-al="left" title="Align left">Left</button><button data-al="center"
+            title="Align center">Center</button><button data-al="right" title="Align right">Right</button>
+        <span class="sep"></span>
+        <label title="Fill color">Fill <input type="color" id="fill" value="#fff2a8"></label>
+        <span id="sws" style="display:contents"></span>
+        <label title="Text color">Text <input type="color" id="fg" value="#c0392b"></label>
+        <span class="sep"></span>
+        <button id="clrf">Clear formatting</button>
+        <button id="xp" title="Export as text table">Export</button>
+        <button id="clrall">New sheet</button>
+        <button id="th" title="Switch light or dark">Theme</button>
+    </div>
+    <div class="fx"><input id="nb" value="A1" readonly aria-label="Selected cell"><input id="fb"
+            aria-label="Formula bar"></div>
+    <div class="wrap">
+        <table id="t"></table>
+    </div>
+    <div class="modal" id="md" role="dialog" aria-modal="true" aria-label="Export">
+        <div class="box">
+            <h2>Export</h2>
+            <div class="tabs"><button id="t1" class="on">Text file</button><button id="t2">Google Docs</button></div>
+            <div id="p1"><textarea id="ta" readonly wrap="off"></textarea></div>
+            <div id="p2" hidden>
+                <ol>
+                    <li>Click <b>Download HTML file</b> below. Your spreadsheet is saved as a web page with its colors,
+                        bold, italics and alignment.</li>
+                    <li>Open <b>drive.google.com</b>, choose <b>New</b>, then <b>File upload</b>, and select the
+                        downloaded file.</li>
+                    <li>Open the uploaded file in Drive and choose <b>Open with</b>,<b>Google Docs</b>.</li>
+                    <li>Google Docs converts it into a document with your table and formatting carried over. Use
+                        <b>File</b>, then <b>Download</b> or <b>Share</b> from there.</li>
+                </ol>
+            </div>
+            <div class="row"><span id="dm"></span><button id="dl" class="pri">Download .txt</button><button
+                    id="cl">Close</button></div>
+        </div>
+    </div>
+    <div class="stat" id="st"></div>
+    <script>
+        const COLS = 26, ROWS = 60, $ = s => document.querySelector(s);
+        const cn = c => String.fromCharCode(65 + c), idOf = (r, c) => cn(c) + (r + 1);
+        let D = {}, A = [0, 0], F = [0, 0], ed = null, drag = false, tds = [], ths = [];
+        try { D = JSON.parse(localStorage.getItem('gridwork2') || '{}') || {} } catch (e) { D = {} }
+        const save = () => { try { localStorage.setItem('gridwork2', JSON.stringify(D)) } catch (e) { } };
+
+        const isNum = v => v !== '' && v != null && !isNaN(+v);
+
+        function val(k) {
+            const c = D[k];
+            if (!c || c.v === '' || c.v == null) return '';
+            const v = String(c.v);
+            return isNum(v) && v.trim() !== '' ? +v : v;
+        }
+
+        const fmt = v => typeof v === 'number' ? String(+v.toFixed(8)) : v;
+
+        // build grid
+        const t = $('#t'); let h = '<thead><tr><th class="r corner"></th>';
+        for (let c = 0; c < COLS; c++)h += `<th data-c="${c}" style="width:100px">${cn(c)}</th>`; h += '</tr></thead><tbody>';
+        for (let r = 0; r < ROWS; r++) { h += `<tr><th class="r" data-r="${r}">${r + 1}</th>`; for (let c = 0; c < COLS; c++)h += `<td data-r="${r}" data-c="${c}"></td>`; h += '</tr>' }
+        t.innerHTML = h + '</tbody>';
+        const cells = [...t.querySelectorAll('td')], at = (r, c) => cells[r * COLS + c];
+        const colH = [...t.querySelectorAll('thead th[data-c]')], rowH = [...t.querySelectorAll('th[data-r]')];
+
+        function paint(td, r, c) {
+            const k = idOf(r, c), d = D[k] || {}, v = val(k);
+            if (td.firstChild && td.firstChild.tagName === 'INPUT') return;
+            td.textContent = fmt(v); const s = td.style;
+            s.background = d.bg || ''; s.color = d.fg || (d.bg ? '#1c2420' : ''); s.fontWeight = d.b ? '700' : ''; s.fontStyle = d.i ? 'italic' : '';
+            s.textAlign = d.a || (typeof v === 'number' ? 'right' : '')
+        }
+        function paintAll() { cells.forEach((td, n) => paint(td, Math.floor(n / COLS), n % COLS)); stats() }
+        const rng = () => [Math.min(A[0], F[0]), Math.min(A[1], F[1]), Math.max(A[0], F[0]), Math.max(A[1], F[1])];
+        function each(fn) { const [r1, c1, r2, c2] = rng(); for (let r = r1; r <= r2; r++)for (let c = c1; c <= c2; c++)fn(r, c, idOf(r, c)) }
+        function showSel() {
+            const [r1, c1, r2, c2] = rng();
+            cells.forEach((td, n) => { const r = Math.floor(n / COLS), c = n % COLS; td.classList.toggle('in', r >= r1 && r <= r2 && c >= c1 && c <= c2 && (r1 !== r2 || c1 !== c2)); td.classList.toggle('cur', r === A[0] && c === A[1]) });
+            colH.forEach((e, c) => e.classList.toggle('hl', c >= c1 && c <= c2)); rowH.forEach((e, r) => e.classList.toggle('hl', r >= r1 && r <= r2));
+            const k = idOf(A[0], A[1]); $('#nb').value = k; if (!ed) $('#fb').value = D[k] && D[k].v != null ? D[k].v : ''; stats()
+        }
+        function stats() {
+            const n = []; each((r, c, k) => { const v = val(k); if (typeof v === 'number') n.push(v) });
+            const s = n.reduce((a, b) => a + b, 0); $('#st').textContent = n.length > 1 ? `Sum ${fmt(s)}   Average ${fmt(s / n.length)}   Count ${n.length}   Min ${fmt(Math.min(...n))}   Max ${fmt(Math.max(...n))}` : ''
+        }
+        function setVal(k, v) { if (v === '') { if (D[k]) { delete D[k].v; if (!Object.keys(D[k]).length) delete D[k] } } else { (D[k] = D[k] || {}).v = isNum(v) && v.trim() !== '' && v[0] !== '=' ? v.trim() : v } save() }
+        function select(r, c, ext) {
+            r = Math.max(0, Math.min(ROWS - 1, r)); c = Math.max(0, Math.min(COLS - 1, c)); if (ed) commit();
+            if (ext) F = [r, c]; else { A = [r, c]; F = [r, c] } showSel(); at(r, c).scrollIntoView({ block: 'nearest', inline: 'nearest' })
+        }
+        function edit(init) {
+            if (ed) return; const [r, c] = A, td = at(r, c), k = idOf(r, c), i = document.createElement('input');
+            i.value = init != null ? init : (D[k] && D[k].v != null ? D[k].v : ''); td.textContent = ''; td.appendChild(i); ed = { i, k, td }; i.focus();
+            i.addEventListener('input', () => $('#fb').value = i.value); i.addEventListener('blur', () => { if (ed && ed.i === i) commit() }); $('#fb').value = i.value
+        }
+        function commit() { if (!ed) return; const { i, k, td } = ed; ed = null; setVal(k, i.value); td.textContent = ''; paintAll(); showSel() }
+        function cancel() { if (!ed) return; const { td } = ed; ed = null; td.textContent = ''; paintAll(); showSel() }
+
+        t.addEventListener('mousedown', e => {
+            const td = e.target.closest('td'), th = e.target.closest('th');
+            if (td) { if (ed && e.target.tagName === 'INPUT') return; select(+td.dataset.r, +td.dataset.c, e.shiftKey); drag = true; e.preventDefault() }
+            else if (th && th.dataset.c !== undefined) { if (ed) commit(); A = [0, +th.dataset.c]; F = [ROWS - 1, +th.dataset.c]; showSel() }
+            else if (th && th.dataset.r !== undefined) { if (ed) commit(); A = [+th.dataset.r, 0]; F = [+th.dataset.r, COLS - 1]; showSel() }
+        });
+        t.addEventListener('mouseover', e => { const td = e.target.closest('td'); if (drag && td) { F = [+td.dataset.r, +td.dataset.c]; showSel() } });
+        t.addEventListener('dblclick', e => { if (e.target.closest('td')) edit() });
+        addEventListener('mouseup', () => drag = false);
+
+        addEventListener('keydown', e => {
+            if (e.target.id === 'fb') { if (e.key === 'Enter') { setVal(idOf(...A), e.target.value); paintAll(); e.target.blur(); select(A[0] + 1, A[1]) } else if (e.key === 'Escape') { showSel(); e.target.blur() } return }
+            if (e.target.closest('.bar,.modal')) { if (e.key === 'Escape') $('#md').classList.remove('on'); return }
+            if (ed) { if (e.key === 'Enter') { e.preventDefault(); commit(); select(A[0] + 1, A[1]) } else if (e.key === 'Tab') { e.preventDefault(); commit(); select(A[0], A[1] + (e.shiftKey ? -1 : 1)) } else if (e.key === 'Escape') cancel(); return }
+            const m = e.ctrlKey || e.metaKey, k = e.key, x = e.shiftKey;
+            if (m && k.toLowerCase() === 'b') { e.preventDefault(); tog('b') }
+            else if (m && k.toLowerCase() === 'i') { e.preventDefault(); tog('i') }
+            else if (m) return;
+            else if (k === 'ArrowDown') { e.preventDefault(); x ? (F = [Math.min(ROWS - 1, F[0] + 1), F[1]], showSel()) : select(A[0] + 1, A[1]) }
+            else if (k === 'ArrowUp') { e.preventDefault(); x ? (F = [Math.max(0, F[0] - 1), F[1]], showSel()) : select(A[0] - 1, A[1]) }
+            else if (k === 'ArrowLeft') { e.preventDefault(); x ? (F = [F[0], Math.max(0, F[1] - 1)], showSel()) : select(A[0], A[1] - 1) }
+            else if (k === 'ArrowRight') { e.preventDefault(); x ? (F = [F[0], Math.min(COLS - 1, F[1] + 1)], showSel()) : select(A[0], A[1] + 1) }
+            else if (k === 'Tab') { e.preventDefault(); select(A[0], A[1] + (x ? -1 : 1)) }
+            else if (k === 'Enter' || k === 'F2') { e.preventDefault(); edit() }
+            else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); each((r, c, key) => setVal(key, '')); paintAll(); showSel() }
+            else if (k.length === 1) { e.preventDefault(); edit(k) }
+        });
+
+        // formatting
+        function put(p, v) { each((r, c, k) => { const d = D[k] = D[k] || {}; if (v == null) delete d[p]; else d[p] = v; if (!Object.keys(d).length) delete D[k] }); save(); paintAll() }
+        function tog(p) { const d = D[idOf(...A)] || {}; put(p, d[p] ? null : 1) }
+        $('#b').onclick = () => tog('b'); $('#i').onclick = () => tog('i');
+        document.querySelectorAll('[data-al]').forEach(b => b.onclick = () => put('a', b.dataset.al));
+        $('#fill').oninput = e => put('bg', e.target.value); $('#fg').oninput = e => put('fg', e.target.value);
+        $('#sws').innerHTML = ['#fff2a8', '#ffd1d1', '#ffdcb8', '#d4f0c8', '#cfe6ff', '#e4d8ff'].map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-label="Fill ${c}"></button>`).join('') + '<button data-c="" title="No fill">No fill</button>';
+        $('#sws').onclick = e => { const b = e.target.closest('button'); if (b) put('bg', b.dataset.c || null) };
+        $('#clrf').onclick = () => { each((r, c, k) => { if (D[k]) { const v = D[k].v; D[k] = v != null ? { v } : undefined; if (!D[k]) delete D[k] } }); save(); paintAll() };
+        $('#clrall').onclick = () => { if (confirm('Clear every cell and start a new sheet?')) { D = {}; save(); paintAll(); select(0, 0) } };
+        function toText() {
+            let mr = -1, mc = -1;
+            Object.keys(D).forEach(k => { if (D[k] && D[k].v != null && D[k].v !== '') { mc = Math.max(mc, k.charCodeAt(0) - 65); mr = Math.max(mr, +k.slice(1) - 1) } });
+            if (mr < 0) return 'The sheet is empty.';
+            const g = [], w = Array(mc + 1).fill(1), len = x => [...x].length;
+            for (let r = 0; r <= mr; r++) { g[r] = []; for (let c = 0; c <= mc; c++) { const v = val(idOf(r, c)), x = String(fmt(v)); g[r][c] = [x, typeof v === 'number']; w[c] = Math.max(w[c], len(x)); } }
+            const rows = g.map(row => '|' + row.map(([x, n], c) => { const p = ' '.repeat(w[c] - len(x)); return ' ' + (n ? p + x : x + p) + ' '; }).join('|') + '|');
+            return rows.join('\n') + '\n' + '—'.repeat(rows[0].length);
+        }
+        function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+        function toHtml() {
+            let mr = -1, mc = -1;
+            Object.keys(D).forEach(k => {
+                if (D[k] && D[k].v != null && D[k].v !== '') {
+                    mc = Math.max(mc, k.charCodeAt(0) - 65);
+                    mr = Math.max(mr, +k.slice(1) - 1);
+                }
+            });
+            let rows = '';
+            for (let r = 0; r <= mr; r++) {
+                rows += '<tr>';
+                for (let c = 0; c <= mc; c++) {
+                    const k = idOf(r, c), d = D[k] || {}, v = val(k), num = typeof v === 'number';
+                    let x = esc(fmt(v)) || '&nbsp;';
+                    if (d.b) x = '<b>' + x + '</b>';
+                    if (d.i) x = '<i>' + x + '</i>';
+                    const bg = d.bg ? `background-color:${d.bg};` : '';
+                    const align = d.a || (num ? 'right' : 'left');
+                    rows += '<td style="border:1px solid #999;padding:4px 8px;' + bg + 'color:' + (d.fg || '#000000') + ';text-align:' + align + '">' + x + '</td>';
+                }
+                rows += '</tr>';
+            }
+            const table = mr < 0
+                ? '<p>The sheet is empty.</p>'
+                : '<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11pt">' + rows + '</table>';
+
+            return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Spreadsheet</title></head><body>' + table + '</bo' + 'dy></html>';
+        }
+
+        function tab(which) {
+            const textMode = which === 'txt';
+            $('#t1').classList.toggle('on', textMode); $('#t2').classList.toggle('on', !textMode);
+            $('#p1').hidden = !textMode; $('#p2').hidden = textMode;
+            $('#dl').textContent = textMode ? 'Download .txt' : 'Download HTML file';
+            $('#dm').textContent = '';
+        }
+        $('#t1').onclick = () => tab('txt');
+        $('#t2').onclick = () => tab('html');
+        $('#xp').onclick = () => { if (ed) commit(); $('#ta').value = toText(); tab('txt'); $('#md').classList.add('on'); $('#dl').focus() };
+        $('#cl').onclick = () => $('#md').classList.remove('on');
+        $('#md').onmousedown = e => { if (e.target.id === 'md') $('#md').classList.remove('on') };
+        $('#dl').onclick = () => {
+            const isText = $('#t1').classList.contains('on');
+            const data = isText ? toText() : toHtml();
+            const blob = new Blob([data], { type: isText ? 'text/plain;charset=utf-8' : 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = isText ? 'spreadsheet.txt' : 'spreadsheet.html';
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            $('#dm').textContent = 'Download started.';
+        };
+        $('#th').onclick = () => { const r = document.documentElement, dk = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; r.dataset.theme = dk ? 'light' : 'dark' };
+        paintAll(); showSel();
+    </script>
+</body>
+
+</html>
